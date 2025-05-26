@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Enhanced Demo ERP System - Manual Testing</title>
+<style>
+  /* Reset & basics */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: #2c3e50;
+    color: white;
+    padding: 1rem 2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    user-select: none;
+  }
+  main {
+    flex-grow: 1;
+    padding: 2rem;
+    max-width: 1024px;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+    border-radius: 8px;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    background: #2980b9;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.25s ease;
+    font-size: 1rem;
+  }
+  button:hover:not(:disabled) {
+    background: #1c5983;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  h1, h2 {
+    margin-bottom: 1rem;
+    color: #34495e;
+  }
+  h3 {
+    margin-bottom: 0.5rem;
+    color: #34495e;
+  }
+  nav {
+    margin-bottom: 2rem;
+  }
+  ul.features-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+    gap: 1rem;
+  }
+  ul.features-list li {
+    background: #ecf0f1;
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px #bdc3c7;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    user-select: none;
+    transition: background-color 0.25s ease;
+  }
+  ul.features-list li:hover {
+    background: #d6e6f5;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: 600;
+  }
+  input, select {
+    padding: 0.4rem 0.6rem;
+    margin-top: 0.25rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    width: 100%;
+    font-size: 1rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  table th, table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  table th {
+    background: #2980b9;
+    color: white;
+  }
+  .back-btn {
+    background: #7f8c8d;
+  }
+  .back-btn:hover {
+    background: #566573;
+  }
+  .btn-danger {
+    background: #c0392b;
+  }
+  .btn-danger:hover {
+    background: #8e2720;
+  }
+  .flex-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  .flex-grow {
+    flex-grow: 1;
+  }
+  .message {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background: #dff0d8;
+    color: #3c763d;
+    border-radius: 4px;
+  }
+  .error {
+    background: #f2dede;
+    color: #a94442;
+  }
+</style>
+</head>
+<body>
+  <header>Enhanced Demo ERP System</header>
+  <main id="app">
+
+    <!-- Content injected by JS navigation -->
+
+  </main>
+<script>
+  (() => {
+    "use strict";
+
+    // In-memory data store for features interaction and testing
+    const state = {
+      customers: [],
+      products: [],
+      invoices: [],
+      orders: [],
+      inventory: {},
+      users: [{id: 1, username: 'admin', role: 'Admin'}],
+      currentUser: {id: 1, username: 'admin', role: 'Admin'},
+      currentView: 'dashboard',
+      viewStack: [], // For back navigation
+    };
+
+    // Utilities
+    const generateId = (() => {
+      let id = 1;
+      return () => id++;
+    })();
+
+    function navigateTo(viewName, params = {}) {
+      if(state.currentView) {
+        state.viewStack.push({view: state.currentView, params: state.currentParams || {}});
+      }
+      state.currentView = viewName;
+      state.currentParams = params;
+      render();
+    }
+
+    function goBack() {
+      if (state.viewStack.length === 0) return;
+      const last = state.viewStack.pop();
+      state.currentView = last.view;
+      state.currentParams = last.params;
+      render();
+    }
+
+    // Validation helper
+    function validateNotEmpty(value) {
+      return value && value.trim().length > 0;
+    }
+
+    function validatePositiveNumber(value) {
+      return !isNaN(value) && Number(value) >= 0;
+    }
+
+    // Components for each feature
+
+    // Dashboard listing features
+    function renderDashboard() {
+      return `
+      <h1>Dashboard</h1>
+      <p>Welcome, <strong>${state.currentUser.username}</strong>! Select a feature to start testing.</p>
+      <nav>
+        <ul class="features-list">
+          <li><button onclick="navigateTo('customers')">Customer Management</button></li>
+          <li><button onclick="navigateTo('products')">Product Management</button></li>
+          <li><button onclick="navigateTo('inventory')">Inventory Management</button></li>
+          <li><button onclick="navigateTo('orders')">Order Processing</button></li>
+          <li><button onclick="navigateTo('invoices')">Invoice Generation</button></li>
+          <li><button onclick="navigateTo('reports')">Reports</button></li>
+          <li><button onclick="navigateTo('userManagement')">User Management</button></li>
+          <li><button onclick="navigateTo('analysis')">Sales & Stock Analysis</button></li>
+          <li><button onclick="navigateTo('settings')">Settings</button></li>
+          <li><button onclick="navigateTo('help')">Help & About</button></li>
+        </ul>
+      </nav>
+      `;
+    }
+
+    // Back button component
+    function backButton() {
+      return `<button class="back-btn" onclick="goBack()" aria-label="Go back to previous page">← Back</button>`;
+    }
+
+    // Customer Management Feature
+    function renderCustomers() {
+      const customerRows = state.customers.map(c => `
+        <tr>
+          <td>${c.id}</td><td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td>
+          <td><button class="btn-danger" onclick="deleteCustomer(${c.id})" aria-label="Delete Customer ${c.name}">Delete</button></td>
+        </tr>
+      `).join('');
+
+      return `
+        <h1>Customer Management</h1>
+        ${backButton()}
+        <h3>Add New Customer</h3>
+        <form id="customer-form" onsubmit="return addCustomer(event)" novalidate>
+          <label for="cust-name">Name *</label>
+          <input type="text" id="cust-name" required aria-required="true" maxlength="100" aria-describedby="cust-name-desc" />
+          <small id="cust-name-desc">Max 100 characters</small>
+          <label for="cust-email">Email *</label>
+          <input type="email" id="cust-email" required aria-required="true" aria-describedby="cust-email-desc" />
+          <small id="cust-email-desc">Enter a valid email address</small>
+          <label for="cust-phone">Phone</label>
+          <input type="tel" id="cust-phone" maxlength="15" aria-describedby="cust-phone-desc" />
+          <small id="cust-phone-desc">Optional, max 15 digits</small>
+          <button type="submit" id="cust-submit-btn">Add Customer</button>
+          <div id="cust-msg" role="alert" aria-live="assertive"></div>
+        </form>
+        <h3>Customers List</h3>
+        <table aria-label="Customers Table">
+          <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
+          <tbody>${customerRows}</tbody>
+        </table>
+      `;
+    }
+
+    // Product Management Feature
+    function renderProducts() {
+      const productRows = state.products.map(p => `
+        <tr>
+          <td>${p.id}</td><td>${p.name}</td><td>${p.price.toFixed(2)}</td><td>${p.sku}</td>
+          <td><button class="btn-danger" onclick="deleteProduct(${p.id})" aria-label="Delete Product ${p.name}">Delete</button></td>
+        </tr>
+      `).join('');
+
+      return `
+        <h1>Product Management</h1>
+        ${backButton()}
+        <h3>Add New Product</h3>
+        <form id="product-form" onsubmit="return addProduct(event)" novalidate>
+          <label for="prod-name">Name *</label>
+          <input type="text" id="prod-name" required aria-required="true" maxlength="100" aria-describedby="prod-name-desc" />
+          <small id="prod-name-desc">Max 100 characters</small>
+          <label for="prod-price">Price *</label>
+          <input type="number" min="0" step="0.01" id="prod-price" required aria-required="true" aria-describedby="prod-price-desc" />
+          <small id="prod-price-desc">Must be greater than or equal to 0</small>
+          <label for="prod-sku">SKU *</label>
+          <input type="text" id="prod-sku" required aria-required="true" maxlength="50" aria-describedby="prod-sku-desc" />
+          <small id="prod-sku-desc">Max 50 characters</small>
+          <button type="submit" id="prod-submit-btn">Add Product</button>
+          <div id="prod-msg" role="alert" aria-live="assertive"></div>
+        </form>
+        <h3>Products List</h3>
+        <table aria-label="Products Table">
+          <thead><tr><th>ID</th><th>Name</th><th>Price</th><th>SKU</th><th>Actions</th></tr></thead>
+          <tbody>${productRows}</tbody>
+        </table>
+      `;
+    }
+
+    // Inventory Management Feature
+    function renderInventory() {
+      const inventoryRows = state.products.map(p => {
+        const stock = state.inventory[p.id] || 0;
+        return `<tr><td>${p.id}</td><td>${p.name}</td><td>${stock}</td></tr>`;
+      }).join('');
+
+      return `
+        <h1>Inventory Management</h1>
+        ${backButton()}
+        <p>Quantity reflects current stock levels for products.</p>
+        <h3>Inventory Overview</h3>
+        <table aria-label="Inventory Table">
+          <thead><tr><th>Product ID</th><th>Product Name</th><th>Quantity in Stock</th></tr></thead>
+          <tbody>${inventoryRows}</tbody>
+        </table>
+        <h3>Adjust Inventory</h3>
+        <form id="inventory-form" onsubmit="return updateInventory(event)" novalidate>
+          <label for="inventory-product">Select Product *</label>
+          <select id="inventory-product" required aria-required="true" aria-describedby="inventory-product-desc">
+            <option value="">-- Select Product --</option>
+            ${state.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+          </select>
+          <small id="inventory-product-desc">Select a product to update inventory</small>
+          <label for="inventory-quantity">New Quantity *</label>
+          <input type="number" id="inventory-quantity" min="0" required aria-required="true" aria-describedby="inventory-quantity-desc" />
+          <small id="inventory-quantity-desc">Must be 0 or higher</small>
+          <button type="submit">Update Inventory</button>
+          <div id="inventory-msg" role="alert" aria-live="assertive"></div>
+        </form>
+      `;
+    }
+
+    // Order Processing Feature
+    function renderOrders() {
+      const customerOptions = state.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      const productOptions = state.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      
+      const ordersRows = state.orders.map(o => {
+        const customer = state.customers.find(c => c.id === o.customerId);
+        const productNames = o.items.map(i => {
+          const prod = state.products.find(p => p.id === i.productId);
+          return prod ? `${prod.name} (x${i.quantity})` : 'Unknown Product';
+        }).join(", ");
+        return `
+          <tr>
+            <td>${o.id}</td><td>${customer ? customer.name : 'Unknown'}</td><td>${productNames}</td><td>${new Date(o.date).toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <h1>Order Processing</h1>
+        ${backButton()}
+        <h3>New Order</h3>
+        <form id="order-form" onsubmit="return addOrder(event)" novalidate>
+          <label for="order-customer">Select Customer *</label>
+          <select id="order-customer" required aria-required="true" aria-describedby="order-customer-desc">
+            <option value="">-- Select Customer --</option>
+            ${customerOptions}
+          </select>
+          <small id="order-customer-desc">Select a customer for this order</small>
+
+          <div id="order-items-container">
+            <h4>Order Items</h4>
+            <div class="order-item">
+              <label>Product *</label>
+              <select class="order-product" required aria-required="true" aria-describedby="order-product-desc">
+                <option value="">-- Select Product --</option>${productOptions}
+              </select>
+              <small id="order-product-desc">Choose product for item</small>
+              <label>Quantity *</label>
+              <input type="number" class="order-quantity" min="1" value="1" required aria-required="true" aria-describedby="order-quantity-desc" />
+              <small id="order-quantity-desc">Quantity must be 1 or more</small>
+            </div>
+          </div>
+          <button type="button" onclick="addOrderItem()">+ Add Item</button>
+          <br/><br/>
+          <button type="submit">Place Order</button>
+          <div id="order-msg" role="alert" aria-live="assertive"></div>
+        </form>
+
+        <h3>Orders List</h3>
+        <table aria-label="Orders Table">
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Date</th></tr></thead>
+          <tbody>${ordersRows}</tbody>
+        </table>
+      `;
+    }
+
+    // Invoice Generation Feature
+    function renderInvoices() {
+      const invoiceRows = state.invoices.map(inv => {
+        const order = state.orders.find(o => o.id === inv.orderId);
+        const customer = order ? state.customers.find(c => c.id === order.customerId) : null;
+        const totalAmount = inv.items.reduce((sum, item) => {
+          const prod = state.products.find(p => p.id === item.productId);
+          return sum + (prod ? prod.price * item.quantity : 0);
+        }, 0);
+        return `
+          <tr>
+            <td>${inv.id}</td>
+            <td>${customer ? customer.name : 'Unknown'}</td>
+            <td>$${totalAmount.toFixed(2)}</td>
+            <td>${new Date(inv.date).toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const orderOptions = state.orders.map(o => `<option value="${o.id}">Order #${o.id}</option>`).join('');
+
+      return `
+        <h1>Invoice Generation</h1>
+        ${backButton()}
+        <h3>Create Invoice from Order</h3>
+        <form id="invoice-form" onsubmit="return createInvoice(event)" novalidate>
+          <label for="invoice-order">Select Order *</label>
+          <select id="invoice-order" required aria-required="true" aria-describedby="invoice-order-desc">
+            <option value="">-- Select Order --</option>
+            ${orderOptions}
+          </select>
+          <small id="invoice-order-desc">Choose an order to generate invoice</small>
+          <button type="submit">Generate Invoice</button>
+          <div id="invoice-msg" role="alert" aria-live="assertive"></div>
+        </form>
+
+        <h3>Invoices</h3>
+        <table aria-label="Invoices Table">
+          <thead><tr><th>Invoice ID</th><th>Customer</th><th>Total</th><th>Date</th></tr></thead>
+          <tbody>${invoiceRows}</tbody>
+        </table>
+      `;
+    }
+
+    // Reports Feature
+    function renderReports() {
+      const totalCustomers = state.customers.length;
+      const totalProducts = state.products.length;
+      const totalOrders = state.orders.length;
+      const totalInvoices = state.invoices.length;
+      const totalInventory = Object.values(state.inventory).reduce((sum, qty) => sum + qty, 0);
+
+      return `
+        <h1>Reports</h1>
+        ${backButton()}
+        <h3>System Summary</h3>
+        <ul>
+          <li>Total Customers: ${totalCustomers}</li>
+          <li>Total Products: ${totalProducts}</li>
+          <li>Total Orders: ${totalOrders}</li>
+          <li>Total Invoices: ${totalInvoices}</li>
+          <li>Total Inventory Quantity: ${totalInventory}</li>
+        </ul>
+        <h3>Orders Summary</h3>
+        <p>Below is a list of recent orders:</p>
+        <table aria-label="Recent Orders Table">
+          <thead><tr><th>ID</th><th>Customer</th><th>Order Date</th></tr></thead>
+          <tbody>
+            ${state.orders.slice(-5).map(o => {
+              const customer = state.customers.find(c => c.id === o.customerId);
+              return `<tr><td>${o.id}</td><td>${customer ? customer.name : 'Unknown'}</td><td>${new Date(o.date).toLocaleDateString()}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // User Management Feature
+    function renderUserManagement() {
+      const usersRows = state.users.map(u => `
+        <tr>
+          <td>${u.id}</td><td>${u.username}</td><td>${u.role}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <h1>User Management</h1>
+        ${backButton()}
+        <h3>Users List</h3>
+        <table aria-label="Users Table">
+          <thead><tr><th>ID</th><th>Username</th><th>Role</th></tr></thead>
+          <tbody>${usersRows}</tbody>
+        </table>
+        <p>User management is read-only in this demo.</p>
+      `;
+    }
+
+    // Sales & Stock Analysis Feature
+    function renderAnalysis() {
+      // Calculate sales per product
+      const salesByProduct = {};
+      for (const inv of state.invoices) {
+        for (const item of inv.items) {
+          salesByProduct[item.productId] = (salesByProduct[item.productId] || 0) + item.quantity;
+        }
+      }
+
+      const rows = state.products.map(p => {
+        const sold = salesByProduct[p.id] || 0;
+        const stock = state.inventory[p.id] || 0;
+        return `<tr><td>${p.name}</td><td>${sold}</td><td>${stock}</td></tr>`;
+      }).join('');
+
+      return `
+        <h1>Sales & Stock Analysis</h1>
+        ${backButton()}
+        <p>This report shows how many units sold vs current stock per product.</p>
+        <table aria-label="Sales & Stock Table">
+          <thead><tr><th>Product</th><th>Units Sold</th><th>Units in Stock</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    // Settings Feature
+    function renderSettings() {
+      return `
+        <h1>Settings</h1>
+        ${backButton()}
+        <h3>User Settings</h3>
+        <p>Username: <strong>${state.currentUser.username}</strong></p>
+        <p>Role: <strong>${state.currentUser.role}</strong></p>
+        <h3>Preferences</h3>
+        <button onclick="alert('Theme toggle clicked - demo only')" aria-label="Toggle dark and light theme">Toggle Dark/Light Theme (Demo)</button>
+      `;
+    }
+
+    // Help & About Feature
+    function renderHelp() {
+      return `
+        <h1>Help & About</h1>
+        ${backButton()}
+        <p>This demo ERP website is built for manual testing purposes.</p>
+        <ul>
+          <li>Test UI elements and navigation.</li>
+          <li>Test data entry validation and relationships.</li>
+          <li>Check inter-feature data interaction like orders affecting inventory.</li>
+          <li>Test back navigation on every page.</li>
+        </ul>
+        <p>Created by BLACKBOXAI. No backend, all client-side.</p>
+      `;
+    }
+
+    // Event Handlers for feature forms and actions
+    window.addCustomer = function(event) {
+      event.preventDefault();
+      const nameEl = document.getElementById('cust-name');
+      const emailEl = document.getElementById('cust-email');
+      const phoneEl = document.getElementById('cust-phone');
+      const msgEl = document.getElementById('cust-msg');
+
+      const name = nameEl.value.trim();
+      const email = emailEl.value.trim();
+      const phone = phoneEl.value.trim();
+
+      if (!validateNotEmpty(name) || !validateNotEmpty(email)) {
+        msgEl.textContent = 'Name and Email are required.';
+        msgEl.className = 'error';
+        if (!validateNotEmpty(name)) nameEl.focus();
+        else emailEl.focus();
+        return false;
+      }
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        msgEl.textContent = 'Email format is invalid.';
+        msgEl.className = 'error';
+        emailEl.focus();
+        return false;
+      }
+      if (name.length > 100) {
+        msgEl.textContent = 'Name exceeds maximum length of 100 characters.';
+        msgEl.className = 'error';
+        nameEl.focus();
+        return false;
+      }
+      if (phone.length > 15) {
+        msgEl.textContent = 'Phone exceeds maximum length of 15 digits.';
+        msgEl.className = 'error';
+        phoneEl.focus();
+        return false;
+      }
+
+      const id = generateId();
+      state.customers.push({id, name, email, phone});
+      msgEl.textContent = `Customer "${name}" added.`;
+      msgEl.className = 'message';
+      event.target.reset();
+      render();
+      return false;
+    };
+
+    window.deleteCustomer = function(id) {
+      if(confirm('Are you sure you want to delete this customer?')) {
+        state.customers = state.customers.filter(c => c.id !== id);
+        render();
+      }
+    };
+
+    window.addProduct = function(event) {
+      event.preventDefault();
+      const nameEl = document.getElementById('prod-name');
+      const priceEl = document.getElementById('prod-price');
+      const skuEl = document.getElementById('prod-sku');
+      const msgEl = document.getElementById('prod-msg');
+
+      const name = nameEl.value.trim();
+      const priceStr = priceEl.value;
+      const sku = skuEl.value.trim();
+      const price = parseFloat(priceStr);
+
+      if (!validateNotEmpty(name) || !validateNotEmpty(sku) || isNaN(price)) {
+        msgEl.textContent = 'Name, SKU, and valid Price are required.';
+        msgEl.className = 'error';
+        if (!validateNotEmpty(name)) nameEl.focus();
+        else if (isNaN(price)) priceEl.focus();
+        else skuEl.focus();
+        return false;
+      }
+      if (price < 0) {
+        msgEl.textContent = 'Price cannot be negative.';
+        msgEl.className = 'error';
+        priceEl.focus();
+        return false;
+      }
+      if (name.length > 100) {
+        msgEl.textContent = 'Name exceeds maximum length of 100 characters.';
+        msgEl.className = 'error';
+        nameEl.focus();
+        return false;
+      }
+      if (sku.length > 50) {
+        msgEl.textContent = 'SKU exceeds maximum length of 50 characters.';
+        msgEl.className = 'error';
+        skuEl.focus();
+        return false;
+      }
+
+      const id = generateId();
+      state.products.push({id, name, price, sku});
+      if (!(id in state.inventory)) {
+        state.inventory[id] = 0;
+      }
+      msgEl.textContent = `Product "${name}" added.`;
+      msgEl.className = 'message';
+      event.target.reset();
+      render();
+      return false;
+    };
+
+    window.deleteProduct = function(id) {
+      if(confirm('Are you sure you want to delete this product?')) {
+        state.products = state.products.filter(p => p.id !== id);
+        delete state.inventory[id];
+        render();
+      }
+    };
+
+    window.updateInventory = function(event) {
+      event.preventDefault();
+      const prodIdStr = document.getElementById('inventory-product').value;
+      const qtyStr = document.getElementById('inventory-quantity').value.trim();
+      const msgEl = document.getElementById('inventory-msg');
+      const prodId = Number(prodIdStr);
+      const qty = Number(qtyStr);
+
+      if (!prodIdStr) {
+        msgEl.textContent = 'Please select a product.';
+        msgEl.className = 'error';
+        return false;
+      }
+      if (isNaN(qty) || qty < 0) {
+        msgEl.textContent = 'Please enter a valid quantity of 0 or higher.';
+        msgEl.className = 'error';
+        return false;
+      }
+
+      state.inventory[prodId] = qty;
+      msgEl.textContent = 'Inventory updated successfully.';
+      msgEl.className = 'message';
+      event.target.reset();
+      render();
+      return false;
+    };
+
+    window.addOrderItem = function() {
+      const container = document.getElementById('order-items-container');
+      const productOptions = state.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      const div = document.createElement('div');
+      div.classList.add('order-item');
+      div.innerHTML = `
+        <label>Product *</label>
+        <select class="order-product" required aria-required="true">
+          <option value="">-- Select Product --</option>${productOptions}
+        </select>
+        <label>Quantity *</label>
+        <input type="number" class="order-quantity" min="1" value="1" required aria-required="true" />
+        <button type="button" onclick="removeOrderItem(this)">Remove Item</button>
+      `;
+      container.appendChild(div);
+    };
+
+    window.removeOrderItem = function(button) {
+      button.parentElement.remove();
+    };
+
+    window.addOrder = function(event) {
+      event.preventDefault();
+      const customerIdStr = document.getElementById('order-customer').value;
+      const customerId = Number(customerIdStr);
+      const msgEl = document.getElementById('order-msg');
+      if (!customerId) {
+        msgEl.textContent = 'Please select a customer.';
+        msgEl.className = 'error';
+        return false;
+      }
+      const orderItemsDivs = [...document.querySelectorAll('#order-items-container .order-item')];
+      const items = [];
+      for (const div of orderItemsDivs) {
+        const prodSelect = div.querySelector('.order-product');
+        const qtyInput = div.querySelector('.order-quantity');
+        const prodId = Number(prodSelect.value);
+        const qty = Number(qtyInput.value);
+        if (!prodId || isNaN(qty) || qty < 1) {
+          msgEl.textContent = 'All order items must have a selected product and quantity >= 1.';
+          msgEl.className = 'error';
+          return false;
+        }
+        items.push({productId: prodId, quantity: qty});
+      }
+      if (items.length === 0) {
+        msgEl.textContent = 'Add at least one order item.';
+        msgEl.className = 'error';
+        return false;
+      }
+      for (const item of items) {
+        const available = state.inventory[item.productId] || 0;
+        if (item.quantity > available) {
+          msgEl.textContent = `Not enough stock for product ID ${item.productId}. Available: ${available}`;
+          msgEl.className = 'error';
+          return false;
+        }
+      }
+      // Reduce stock
+      for (const item of items) {
+        state.inventory[item.productId] -= item.quantity;
+      }
+      const id = generateId();
+      const date = new Date().toISOString();
+      state.orders.push({id, customerId, items, date});
+      msgEl.textContent = 'Order placed successfully.';
+      msgEl.className = 'message';
+      event.target.reset();
+      const container = document.getElementById('order-items-container');
+      container.innerHTML = `
+      <h4>Order Items</h4>
+      <div class="order-item">
+        <label>Product *</label>
+        <select class="order-product" required aria-required="true">
+          <option value="">-- Select Product --</option>${state.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+        </select>
+        <label>Quantity *</label>
+        <input type="number" class="order-quantity" min="1" value="1" required aria-required="true" />
+      </div>
+      `;
+      render();
+      return false;
+    };
+
+    window.createInvoice = function(event) {
+      event.preventDefault();
+      const orderIdStr = document.getElementById('invoice-order').value;
+      const orderId = Number(orderIdStr);
+      const msgEl = document.getElementById('invoice-msg');
+      if (!orderId) {
+        msgEl.textContent = 'Please select an order.';
+        msgEl.className = 'error';
+        return false;
+      }
+      if (state.invoices.some(inv => inv.orderId === orderId)) {
+        msgEl.textContent = 'Invoice already created for this order.';
+        msgEl.className = 'error';
+        return false;
+      }
+      const order = state.orders.find(o => o.id === orderId);
+      if (!order) {
+        msgEl.textContent = 'Order not found.';
+        msgEl.className = 'error';
+        return false;
+      }
+      const id = generateId();
+      const date = new Date().toISOString();
+      state.invoices.push({id, orderId, items: order.items, date});
+      msgEl.textContent = `Invoice #${id} generated successfully.`;
+      msgEl.className = 'message';
+      event.target.reset();
+      render();
+      return false;
+    };
+
+    // Main render function
+    function render() {
+      const app = document.getElementById('app');
+      switch(state.currentView) {
+        case 'dashboard': app.innerHTML = renderDashboard(); break;
+        case 'customers': app.innerHTML = renderCustomers(); break;
+        case 'products': app.innerHTML = renderProducts(); break;
+        case 'inventory': app.innerHTML = renderInventory(); break;
+        case 'orders': app.innerHTML = renderOrders(); break;
+        case 'invoices': app.innerHTML = renderInvoices(); break;
+        case 'reports': app.innerHTML = renderReports(); break;
+        case 'userManagement': app.innerHTML = renderUserManagement(); break;
+        case 'analysis': app.innerHTML = renderAnalysis(); break;
+        case 'settings': app.innerHTML = renderSettings(); break;
+        case 'help': app.innerHTML = renderHelp(); break;
+        default: app.innerHTML = `<p>Page not found</p><button onclick="goBack()">Back</button>`;
+      }
+    }
+
+    // Make functions globally available for inline event handlers
+    window.navigateTo = navigateTo;
+    window.goBack = goBack;
+
+    // Initialize rendering on load
+    document.addEventListener('DOMContentLoaded', () => {
+      render();
+    });
+
+  })();
+</script>
+</body>
+</html>
+
